@@ -6,7 +6,7 @@
 int main(void)
 {
   GC_INIT();
-  // GC_enable_incremental(); //小さいGCを多く行う。世代別とはちがう？
+  GC_enable_incremental(); //小さいGCを多く行う。世代別とはちがう？
   GC_start_performance_measurement();
   printf("start\n");
   long long Np = 100;
@@ -22,7 +22,6 @@ int main(void)
     ch = (long long*)GC_MALLOC(sizeof(long long) * Nc);
     if (ph == NULL) exit(0);
     if (ch == NULL) exit(0);
-
     // 100点満点で点数を入力
     for (long long k = 0; k < Np; k++)
     {
@@ -58,6 +57,6 @@ int main(void)
   }
 
   printf("NUM OF GC : %lu\n", GC_get_gc_no());
-  printf("TIME OF GC : %lu\n", GC_get_full_gc_total_time());
+  printf("TIME OF GC : %lu ms\n", GC_get_full_gc_total_time());
   return 0;
 }

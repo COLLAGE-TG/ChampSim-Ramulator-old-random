@@ -8,6 +8,7 @@
 /*.trace
 /Dockerfile
 /*.sh
+/tmp_trace
 
 # Common git commands are listed below, the main branch is the branch pointed by the HEAD pointer.
 

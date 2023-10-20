@@ -134,33 +134,6 @@ void WriteToSet(T* begin, T* end, UINT32 r)
 /* ===================================================================== */
 // Print routine
 /* ===================================================================== */
-// Holds instruction count for a single procedure
-typedef struct RtnCount
-{
-  std::string _name;
-  std::string _image;
-  ADDRINT _address;
-  RTN _rtn;
-  UINT64 _rtnCount;
-  UINT64 _icount;
-  struct RtnCount* _next;
-} RTN_COUNT;
-
-
-// Linked list of instruction counts for each routine
-RTN_COUNT* RtnList = 0;
-
-// This function is called before every instruction is executed
-VOID docount(UINT64* counter) { (*counter)++; }
-
-const char* StripPath(const char* path)
-{
-  const char* file = strrchr(path, '/');
-  if (file)
-    return file + 1;
-  else
-    return path;
-}
 
 VOID do_call(ADDRINT addr)
 {
@@ -168,46 +141,6 @@ VOID do_call(ADDRINT addr)
   //fprintf(trace, "\n[%s]\n",  RTN_FindNameByAddress(addr).c_str())); 
   //fflush(trace);
 }
-
-// Pin calls this function every time a new rtn is executed
-VOID Routine(RTN rtn, VOID* v)
-{
-  // Allocate a counter for this routine
-  RTN_COUNT* rc = new RTN_COUNT;
-
-  // The RTN goes away when the image is unloaded, so save it now
-  // because we need it in the fini
-  rc->_name = RTN_Name(rtn);
-  rc->_image = StripPath(IMG_Name(SEC_Img(RTN_Sec(rtn))).c_str());
-  rc->_address = RTN_Address(rtn);
-  rc->_icount = 0;
-  rc->_rtnCount = 0;
-
-  // taiga's debug code
-  // std::cout << "rc_name = " << rc->_name << std::endl;
-  // std::cout << "rc_image = " << rc->_image << std::endl;
-  // std::cout << "__FUNCTION__ = " << __FUNCTION__ << std::endl;
-  // taiga's debug code
-
-  // Add to list of routines
-  rc->_next = RtnList;
-  RtnList = rc;
-
-  RTN_Open(rtn);
-
-  // Insert a call at the entry point of a routine to increment the call count
-  RTN_InsertCall(rtn, IPOINT_BEFORE, (AFUNPTR)docount, IARG_PTR, &(rc->_rtnCount), IARG_END);
-
-  // For each instruction of the routine
-  for (INS ins = RTN_InsHead(rtn); INS_Valid(ins); ins = INS_Next(ins))
-  {
-    // Insert a call to docount to increment the instruction counter for this rtn
-    INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR)docount, IARG_PTR, &(rc->_icount), IARG_END);
-  }
-
-  RTN_Close(rtn);
-}
-
 
 /* ===================================================================== */
 // Instrumentation callbacks
@@ -319,11 +252,6 @@ int main(int argc, char* argv[])
     std::cout << "Couldn't open output trace file. Exiting." << std::endl;
     exit(1);
   }
-
-  // === for print routine name ===
-  // Register Routine to be called to instrument rtn
-  // RTN_AddInstrumentFunction(Routine, 0);
-  // === for print routine name ===
 
   // Register function to be called to instrument instructions
   INS_AddInstrumentFunction(Instruction, 0);

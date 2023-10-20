@@ -3,7 +3,13 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "/home/funkytaiga/pin-3.27-98718-gbeaa5d51e-gcc-linux/source/include/pin",
+                "/home/funkytaiga/pin-3.27-98718-gbeaa5d51e-gcc-linux/extras/xed-intel64/include/xed",
+                "/home/funkytaiga/pin-3.27-98718-gbeaa5d51e-gcc-linux/extras/crt/include",
+                "/home/funkytaiga/pin-3.27-98718-gbeaa5d51e-gcc-linux/extras/crt/include/kernel/uapi",
+                "/home/funkytaiga/pin-3.27-98718-gbeaa5d51e-gcc-linux/extras/components/include",
+                "/home/funkytaiga/pin-3.27-98718-gbeaa5d51e-gcc-linux/source/include/pin/gen"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

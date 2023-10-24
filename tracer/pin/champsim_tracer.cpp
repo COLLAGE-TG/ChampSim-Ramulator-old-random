@@ -132,7 +132,7 @@ void WriteToSet(T* begin, T* end, UINT32 r)
 }
 
 /* ===================================================================== */
-// Print routine
+// Print routine function
 /* ===================================================================== */
 
 VOID do_call(ADDRINT addr)
@@ -141,6 +141,38 @@ VOID do_call(ADDRINT addr)
   //fprintf(trace, "\n[%s]\n",  RTN_FindNameByAddress(addr).c_str())); 
   //fflush(trace);
 }
+
+// 関数の終了を知らせる関数
+VOID do_call_end(ADDRINT addr)
+{
+  std::cout << "end " << RTN_FindNameByAddress(addr).c_str() << std::endl;
+}
+
+// // 関数エントリ時のコールバック関数
+// VOID FunctionEntry(RTN rtn, VOID* v)
+// {
+//   // 関数名を取得
+//   // std::string funcName = RTN_Name(rtn);
+//   ADDRINT addr = RTN_Address(rtn);
+//   std::string funcName = RTN_FindNameByAddress(addr).c_str();
+
+//   // 関数エントリ時の処理をここに追加
+//   std::cout << "Entering function: " << funcName << std::endl;
+
+// }
+
+// // 関数エグジット時のコールバック関数
+// VOID FunctionExit(RTN rtn, VOID* v)
+// {
+//   // 関数名を取得
+//   // std::string funcName = RTN_Name(rtn);
+//   ADDRINT addr = RTN_Address(rtn);
+//   std::string funcName = RTN_FindNameByAddress(addr).c_str();
+
+//   // 関数エグジット時の処理をここに追加
+//   std::cout << "Exiting function: " << funcName << std::endl;
+// }
+
 
 /* ===================================================================== */
 // Instrumentation callbacks
@@ -166,7 +198,16 @@ VOID Instruction(INS ins, VOID* v)
       const ADDRINT addr = INS_DirectControlFlowTargetAddress(ins);
       INS_InsertPredicatedCall(ins, IPOINT_BEFORE, AFUNPTR(do_call),
                                IARG_PTR, addr, IARG_FUNCARG_CALLSITE_VALUE, 0, IARG_END);
+      RTN cur_rtn = RTN_FindByAddress(addr);
+      // RTN cur_rtn = INS_Rtn(ins);
 
+      // // 関数の最後に挿入される命令を指定
+      RTN_Open(cur_rtn);
+      INS tail_ins = RTN_InsTail(cur_rtn);
+
+      // // 指定した命令にカスタムコードを挿入
+      INS_InsertCall(tail_ins, IPOINT_BEFORE, AFUNPTR(do_call_end), IARG_PTR, addr, IARG_END);
+      RTN_Close(cur_rtn);
     }
   }
   /* ===================================================================== */
@@ -252,6 +293,11 @@ int main(int argc, char* argv[])
     std::cout << "Couldn't open output trace file. Exiting." << std::endl;
     exit(1);
   }
+
+  // // RTN_AddInstrumentFunctionを使用して関数エントリとエグジットのコールバック関数を設定
+  // RTN_AddInstrumentFunction(FunctionEntry, 0);
+  // RTN_AddInstrumentFunction(FunctionExit, 0);
+
 
   // Register function to be called to instrument instructions
   INS_AddInstrumentFunction(Instruction, 0);

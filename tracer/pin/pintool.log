@@ -1,3 +1,4 @@
 Pin: pin-3.27-98718-beaa5d51e
 Copyright 2002-2023 Intel Corporation.
-NFE:  [tid:3889366] unknown option "-ascii_trace"
+A:  /tmp_proj/pinjen/workspace/pypl-pin-nightly/GitPin/Source/pin/pin/image.cpp: RTN_Open: 3405: assertion failed: RTN_valid(rtn)
+

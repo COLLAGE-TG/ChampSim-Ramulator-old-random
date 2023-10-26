@@ -30,6 +30,8 @@
 
 using trace_instr_format_t = input_instr;
 
+#define GC_START "GC_stopped_mark"
+
 /* ================================================================== */
 // Global variables 
 /* ================================================================== */
@@ -135,18 +137,18 @@ void WriteToSet(T* begin, T* end, UINT32 r)
 // Print routine function
 /* ===================================================================== */
 
-VOID do_call(ADDRINT addr)
-{
-  printf("%p - %s\n", (void*)addr, RTN_FindNameByAddress(addr).c_str());
-  //fprintf(trace, "\n[%s]\n",  RTN_FindNameByAddress(addr).c_str())); 
-  //fflush(trace);
-}
+// VOID do_call(ADDRINT addr)
+// {
+//   printf("%p - %s\n", (void*)addr, RTN_FindNameByAddress(addr).c_str());
+//   //fprintf(trace, "\n[%s]\n",  RTN_FindNameByAddress(addr).c_str())); 
+//   //fflush(trace);
+// }
 
-// 関数の終了を知らせる関数
-VOID do_call_end(ADDRINT addr)
-{
-  std::cout << "end " << RTN_FindNameByAddress(addr).c_str() << std::endl;
-}
+// // 関数の終了を知らせる関数
+// VOID do_call_end(ADDRINT addr)
+// {
+//   std::cout << "end " << RTN_FindNameByAddress(addr).c_str() << std::endl;
+// }
 
 // // 関数エントリ時のコールバック関数
 // VOID FunctionEntry(RTN rtn, VOID* v)
@@ -173,6 +175,15 @@ VOID do_call_end(ADDRINT addr)
 //   std::cout << "Exiting function: " << funcName << std::endl;
 // }
 
+VOID Image(IMG img, VOID* v)
+{
+  RTN GC_start_rtn = RTN_FindByName(img, GC_START);
+  if (RTN_Valid(GC_start_rtn))
+  {
+    std::cout << "====================" << "GC_start_rtn " << GC_START << "====================" << std::endl;
+  }
+}
+
 
 /* ===================================================================== */
 // Instrumentation callbacks
@@ -191,25 +202,25 @@ VOID Instruction(INS ins, VOID* v)
   /* ===================================================================== */
   // Print routine
   /* ===================================================================== */
-  if (INS_IsCall(ins))
-  {
-    if (INS_IsDirectControlFlow(ins))
-    {
-      const ADDRINT addr = INS_DirectControlFlowTargetAddress(ins);
-      INS_InsertPredicatedCall(ins, IPOINT_BEFORE, AFUNPTR(do_call),
-                               IARG_PTR, addr, IARG_FUNCARG_CALLSITE_VALUE, 0, IARG_END);
-      RTN cur_rtn = RTN_FindByAddress(addr);
-      // RTN cur_rtn = INS_Rtn(ins);
+  // if (INS_IsCall(ins))
+  // {
+  //   if (INS_IsDirectControlFlow(ins))
+  //   {
+  //     const ADDRINT addr = INS_DirectControlFlowTargetAddress(ins);
+  //     INS_InsertPredicatedCall(ins, IPOINT_BEFORE, AFUNPTR(do_call),
+  //                              IARG_PTR, addr, IARG_FUNCARG_CALLSITE_VALUE, 0, IARG_END);
+  //     RTN cur_rtn = RTN_FindByAddress(addr);
+  //     // RTN cur_rtn = INS_Rtn(ins);
 
-      // // 関数の最後に挿入される命令を指定
-      RTN_Open(cur_rtn);
-      INS tail_ins = RTN_InsTail(cur_rtn);
+  //     // // 関数の最後に挿入される命令を指定
+  //     RTN_Open(cur_rtn);
+  //     INS tail_ins = RTN_InsTail(cur_rtn);
 
-      // // 指定した命令にカスタムコードを挿入
-      INS_InsertCall(tail_ins, IPOINT_BEFORE, AFUNPTR(do_call_end), IARG_PTR, addr, IARG_END);
-      RTN_Close(cur_rtn);
-    }
-  }
+  //     // // 指定した命令にカスタムコードを挿入
+  //     INS_InsertCall(tail_ins, IPOINT_BEFORE, AFUNPTR(do_call_end), IARG_PTR, addr, IARG_END);
+  //     RTN_Close(cur_rtn);
+  //   }
+  // }
   /* ===================================================================== */
   // Print routine
   /* ===================================================================== */
@@ -298,6 +309,8 @@ int main(int argc, char* argv[])
   // RTN_AddInstrumentFunction(FunctionEntry, 0);
   // RTN_AddInstrumentFunction(FunctionExit, 0);
 
+  // プリントファンクション
+  IMG_AddInstrumentFunction(Image, 0);
 
   // Register function to be called to instrument instructions
   INS_AddInstrumentFunction(Instruction, 0);

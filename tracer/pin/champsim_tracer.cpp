@@ -30,6 +30,7 @@
 
 using trace_instr_format_t = input_instr;
 
+// #define GC_START "signal_gc_start"
 #define GC_START "GC_stopped_mark"
 
 /* ================================================================== */
@@ -62,7 +63,6 @@ void file_output(std::string file_path)
   }
   // ファイルを閉じる
   inputfile.close();
-
 }
 
 /* ===================================================================== */
@@ -175,12 +175,27 @@ void WriteToSet(T* begin, T* end, UINT32 r)
 //   std::cout << "Exiting function: " << funcName << std::endl;
 // }
 
+VOID Print_rtn_start(CHAR* name)
+{
+  std::cout << "====================" << "rtn_name =  " << name << "====================" << std::endl;
+}
+
+VOID Print_rtn_end(CHAR* name)
+{
+  std::cout << "====================" << " end " << name << "====================" << std::endl;
+}
+
 VOID Image(IMG img, VOID* v)
 {
   RTN GC_start_rtn = RTN_FindByName(img, GC_START);
   if (RTN_Valid(GC_start_rtn))
   {
-    std::cout << "====================" << "GC_start_rtn " << GC_START << "====================" << std::endl;
+    std::cout << "====================" << "Finded GC_start_rtn " << GC_START << "====================" << std::endl;
+    RTN_Open(GC_start_rtn);
+    RTN_InsertCall(GC_start_rtn, IPOINT_BEFORE, (AFUNPTR)Print_rtn_start, IARG_ADDRINT, GC_START,
+                   IARG_END);
+    RTN_InsertCall(GC_start_rtn, IPOINT_AFTER, (AFUNPTR)Print_rtn_end, IARG_ADDRINT, GC_START, IARG_END);
+    RTN_Close(GC_start_rtn);
   }
 }
 
@@ -308,6 +323,7 @@ int main(int argc, char* argv[])
   // // RTN_AddInstrumentFunctionを使用して関数エントリとエグジットのコールバック関数を設定
   // RTN_AddInstrumentFunction(FunctionEntry, 0);
   // RTN_AddInstrumentFunction(FunctionExit, 0);
+
 
   // プリントファンクション
   IMG_AddInstrumentFunction(Image, 0);

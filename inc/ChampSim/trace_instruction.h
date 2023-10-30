@@ -19,7 +19,7 @@
 
 #include <limits>
 
-// instruction format
+ // instruction format
 constexpr std::size_t NUM_INSTR_DESTINATIONS_SPARC = 4;
 constexpr std::size_t NUM_INSTR_DESTINATIONS = 2;
 constexpr std::size_t NUM_INSTR_SOURCES = 4;

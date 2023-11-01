@@ -65,6 +65,21 @@ void file_output(std::string file_path)
   inputfile.close();
 }
 
+void print_curr_instr(trace_instr_format_t instr)
+{
+  std::cout << "===================" << std::endl;
+  std::cout << "instr.ip = " << instr.ip << std::endl;
+  std::cout << "instr.is_branch = " << instr.is_branch << std::endl;
+  std::cout << "instr.branch_taken = " << instr.branch_taken << std::endl;
+  std::cout << "instr.destination_registers = " << instr.destination_registers << std::endl;
+  std::cout << "instr.source_registers = " << instr.source_registers << std::endl;
+  std::cout << "instr.destination_memory = " << instr.destination_memory << std::endl;
+  std::cout << "instr.source_memory = " << instr.source_memory << std::endl;
+  std::cout << "instr.is_rtn_start = " << instr.is_rtn_start << std::endl;
+  std::cout << "instr.is_rtn_end = " << instr.is_rtn_end << std::endl;
+  std::cout << "instr.function_name = " << instr.function_name << std::endl;
+}
+
 /* ===================================================================== */
 // Command line switches
 /* ===================================================================== */
@@ -114,8 +129,11 @@ BOOL ShouldWrite()
 
 void WriteCurrentInstruction()
 {
+  print_curr_instr(curr_instr); // デバッグ用の命令
+
   typename decltype(outfile)::char_type buf[sizeof(trace_instr_format_t)];
   std::memcpy(buf, &curr_instr, sizeof(trace_instr_format_t));
+  // std::cout << "====================" << "instrCount" << instrCount << " " << "curr_instr.function_name =  " << curr_instr.function_name << " curr_instr.source_memory " << curr_instr.source_memory << " curr_instr.destination_registers " << curr_instr.destination_registers << "curr_instr.destination_memory " << curr_instr.destination_memory << "====================" << std::endl;
   outfile.write(buf, sizeof(trace_instr_format_t)); //curr_instrのデータをbufに渡す。curr_instrには.ip, .is_branchなどの値がある。
 }
 
@@ -137,52 +155,35 @@ void WriteToSet(T* begin, T* end, UINT32 r)
 // Print routine function
 /* ===================================================================== */
 
-// VOID do_call(ADDRINT addr)
-// {
-//   printf("%p - %s\n", (void*)addr, RTN_FindNameByAddress(addr).c_str());
-//   //fprintf(trace, "\n[%s]\n",  RTN_FindNameByAddress(addr).c_str())); 
-//   //fflush(trace);
-// }
-
-// // 関数の終了を知らせる関数
-// VOID do_call_end(ADDRINT addr)
-// {
-//   std::cout << "end " << RTN_FindNameByAddress(addr).c_str() << std::endl;
-// }
-
-// // 関数エントリ時のコールバック関数
-// VOID FunctionEntry(RTN rtn, VOID* v)
-// {
-//   // 関数名を取得
-//   // std::string funcName = RTN_Name(rtn);
-//   ADDRINT addr = RTN_Address(rtn);
-//   std::string funcName = RTN_FindNameByAddress(addr).c_str();
-
-//   // 関数エントリ時の処理をここに追加
-//   std::cout << "Entering function: " << funcName << std::endl;
-
-// }
-
-// // 関数エグジット時のコールバック関数
-// VOID FunctionExit(RTN rtn, VOID* v)
-// {
-//   // 関数名を取得
-//   // std::string funcName = RTN_Name(rtn);
-//   ADDRINT addr = RTN_Address(rtn);
-//   std::string funcName = RTN_FindNameByAddress(addr).c_str();
-
-//   // 関数エグジット時の処理をここに追加
-//   std::cout << "Exiting function: " << funcName << std::endl;
-// }
-
 VOID Print_rtn_start(CHAR* name)
 {
   std::cout << "====================" << "rtn_name =  " << name << "====================" << std::endl;
+  curr_instr.is_rtn_start = 1;
+  strncpy(curr_instr.function_name, name, sizeof(curr_instr.function_name));
+  curr_instr.function_name[sizeof(curr_instr.function_name) - 1] = '\0';
+
+  // std::cout << "-------" << "Print_rtn_start" << "-------" << std::endl;
+  // print_curr_instr(curr_instr);
 }
 
 VOID Print_rtn_end(CHAR* name)
 {
   std::cout << "====================" << " end " << name << "====================" << std::endl;
+  curr_instr.is_rtn_end = 1;
+  std::cout << "==================now_curr_instr " << curr_instr.is_rtn_end << std::endl;
+  strncpy(curr_instr.function_name, name, sizeof(curr_instr.function_name));
+  curr_instr.function_name[sizeof(curr_instr.function_name) - 1] = '\0';
+  std::cout << "-------" << "Print_rtn_end" << "-------" << std::endl;
+  print_curr_instr(curr_instr);
+}
+
+// 初期化だけ行う
+VOID Init_instruction(INS ins, VOID* v)
+{
+  // begin each instruction with this function
+  INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR)ResetCurrentInstruction, IARG_INST_PTR, IARG_END);
+  std::cout << "-------" << "Init_instruction" << "-------" << std::endl;
+  print_curr_instr(curr_instr);
 }
 
 VOID Image(IMG img, VOID* v)
@@ -208,37 +209,11 @@ VOID Image(IMG img, VOID* v)
 VOID Instruction(INS ins, VOID* v)
 {
   // begin each instruction with this function
-  INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR)ResetCurrentInstruction, IARG_INST_PTR, IARG_END);
+  // INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR)ResetCurrentInstruction, IARG_INST_PTR, IARG_END);
 
   // instrument branch instructions
   if (INS_IsBranch(ins))
     INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR)BranchOrNot, IARG_BRANCH_TAKEN, IARG_END);
-
-  /* ===================================================================== */
-  // Print routine
-  /* ===================================================================== */
-  // if (INS_IsCall(ins))
-  // {
-  //   if (INS_IsDirectControlFlow(ins))
-  //   {
-  //     const ADDRINT addr = INS_DirectControlFlowTargetAddress(ins);
-  //     INS_InsertPredicatedCall(ins, IPOINT_BEFORE, AFUNPTR(do_call),
-  //                              IARG_PTR, addr, IARG_FUNCARG_CALLSITE_VALUE, 0, IARG_END);
-  //     RTN cur_rtn = RTN_FindByAddress(addr);
-  //     // RTN cur_rtn = INS_Rtn(ins);
-
-  //     // // 関数の最後に挿入される命令を指定
-  //     RTN_Open(cur_rtn);
-  //     INS tail_ins = RTN_InsTail(cur_rtn);
-
-  //     // // 指定した命令にカスタムコードを挿入
-  //     INS_InsertCall(tail_ins, IPOINT_BEFORE, AFUNPTR(do_call_end), IARG_PTR, addr, IARG_END);
-  //     RTN_Close(cur_rtn);
-  //   }
-  // }
-  /* ===================================================================== */
-  // Print routine
-  /* ===================================================================== */
 
   // instrument register reads
   UINT32 readRegCount = INS_MaxNumRRegs(ins);
@@ -275,6 +250,10 @@ VOID Instruction(INS ins, VOID* v)
                      IARG_PTR, curr_instr.destination_memory, IARG_PTR, curr_instr.destination_memory + NUM_INSTR_DESTINATIONS,
                      IARG_MEMORYOP_EA, memOp, IARG_END);
   }
+
+  // debug
+  // std::cout << "-------" << "instruction" << "-------" << std::endl;
+  // print_curr_instr(curr_instr);
 
   // finalize each instruction with this function
   INS_InsertIfCall(ins, IPOINT_BEFORE, (AFUNPTR)ShouldWrite, IARG_END);
@@ -324,6 +303,7 @@ int main(int argc, char* argv[])
   // RTN_AddInstrumentFunction(FunctionEntry, 0);
   // RTN_AddInstrumentFunction(FunctionExit, 0);
 
+  INS_AddInstrumentFunction(Init_instruction, 0);
 
   // プリントファンクション
   IMG_AddInstrumentFunction(Image, 0);

@@ -189,8 +189,11 @@ VOID Init_instruction(INS ins, VOID* v)
 VOID Image(IMG img, VOID* v)
 {
   RTN GC_start_rtn = RTN_FindByName(img, GC_START);
+  std::cout << "I'm here" << std::endl;
+  std::cout << "IMG name " << IMG_Name(img) << std::endl;
   if (RTN_Valid(GC_start_rtn))
   {
+    std::cout << "I'm here2" << std::endl;
     std::cout << "====================" << "Finded GC_start_rtn " << GC_START << "====================" << std::endl;
     RTN_Open(GC_start_rtn);
     RTN_InsertCall(GC_start_rtn, IPOINT_BEFORE, (AFUNPTR)Print_rtn_start, IARG_ADDRINT, GC_START,
@@ -255,7 +258,7 @@ VOID Instruction(INS ins, VOID* v)
   // std::cout << "-------" << "instruction" << "-------" << std::endl;
   // print_curr_instr(curr_instr);
 
-  // finalize each instruction with this function
+// finalize each instruction with this function
   INS_InsertIfCall(ins, IPOINT_BEFORE, (AFUNPTR)ShouldWrite, IARG_END);
   INS_InsertThenCall(ins, IPOINT_BEFORE, (AFUNPTR)WriteCurrentInstruction, IARG_END);
 }

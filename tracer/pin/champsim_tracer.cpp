@@ -47,38 +47,38 @@ trace_instr_format_t curr_instr;
 // Taiga's debug function
 /* ================================================================== */
 
-void file_output(std::string file_path)
-{
-  std::ifstream inputfile(file_path);
-  if (!inputfile.is_open())
-  {
-    std::cerr << "ファイルを開けませんでした." << std::endl;
-    exit(1);
-  }
-  // ファイルからデータを読み込んで標準出力に出力
-  std::string line;
-  while (std::getline(inputfile, line))
-  {
-    std::cout << line << std::endl;
-  }
-  // ファイルを閉じる
-  inputfile.close();
-}
+// void file_output(std::string file_path)
+// {
+//   std::ifstream inputfile(file_path);
+//   if (!inputfile.is_open())
+//   {
+//     std::cerr << "ファイルを開けませんでした." << std::endl;
+//     exit(1);
+//   }
+//   // ファイルからデータを読み込んで標準出力に出力
+//   std::string line;
+//   while (std::getline(inputfile, line))
+//   {
+//     std::cout << line << std::endl;
+//   }
+//   // ファイルを閉じる
+//   inputfile.close();
+// }
 
-void print_curr_instr(trace_instr_format_t instr)
-{
-  std::cout << "===================" << std::endl;
-  std::cout << "instr.ip = " << instr.ip << std::endl;
-  std::cout << "instr.is_branch = " << instr.is_branch << std::endl;
-  std::cout << "instr.branch_taken = " << instr.branch_taken << std::endl;
-  std::cout << "instr.destination_registers = " << instr.destination_registers << std::endl;
-  std::cout << "instr.source_registers = " << instr.source_registers << std::endl;
-  std::cout << "instr.destination_memory = " << instr.destination_memory << std::endl;
-  std::cout << "instr.source_memory = " << instr.source_memory << std::endl;
-  std::cout << "instr.is_rtn_start = " << instr.is_rtn_start << std::endl;
-  std::cout << "instr.is_rtn_end = " << instr.is_rtn_end << std::endl;
-  std::cout << "instr.function_name = " << instr.function_name << std::endl;
-}
+// void print_curr_instr(trace_instr_format_t instr)
+// {
+//   std::cout << "===================" << std::endl;
+//   std::cout << "instr.ip = " << instr.ip << std::endl;
+//   std::cout << "instr.is_branch = " << instr.is_branch << std::endl;
+//   std::cout << "instr.branch_taken = " << instr.branch_taken << std::endl;
+//   std::cout << "instr.destination_registers = " << instr.destination_registers << std::endl;
+//   std::cout << "instr.source_registers = " << instr.source_registers << std::endl;
+//   std::cout << "instr.destination_memory = " << instr.destination_memory << std::endl;
+//   std::cout << "instr.source_memory = " << instr.source_memory << std::endl;
+//   std::cout << "instr.is_rtn_start = " << instr.is_rtn_start << std::endl;
+//   std::cout << "instr.is_rtn_end = " << instr.is_rtn_end << std::endl;
+//   std::cout << "instr.function_name = " << instr.function_name << std::endl;
+// }
 
 /* ===================================================================== */
 // Command line switches
@@ -129,7 +129,7 @@ BOOL ShouldWrite()
 
 void WriteCurrentInstruction()
 {
-  print_curr_instr(curr_instr); // デバッグ用の命令
+  // print_curr_instr(curr_instr); // デバッグ用の命令
 
   typename decltype(outfile)::char_type buf[sizeof(trace_instr_format_t)];
   std::memcpy(buf, &curr_instr, sizeof(trace_instr_format_t));
@@ -174,17 +174,17 @@ VOID Print_rtn_end(CHAR* name)
   strncpy(curr_instr.function_name, name, sizeof(curr_instr.function_name));
   curr_instr.function_name[sizeof(curr_instr.function_name) - 1] = '\0';
   std::cout << "-------" << "Print_rtn_end" << "-------" << std::endl;
-  print_curr_instr(curr_instr);
+  // print_curr_instr(curr_instr);
 }
 
 // 初期化だけ行う
-VOID Init_instruction(INS ins, VOID* v)
-{
-  // begin each instruction with this function
-  INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR)ResetCurrentInstruction, IARG_INST_PTR, IARG_END);
-  std::cout << "-------" << "Init_instruction" << "-------" << std::endl;
-  print_curr_instr(curr_instr);
-}
+// VOID Init_instruction(INS ins, VOID* v)
+// {
+//   // begin each instruction with this function
+//   INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR)ResetCurrentInstruction, IARG_INST_PTR, IARG_END);
+//   std::cout << "-------" << "Init_instruction" << "-------" << std::endl;
+//   // print_curr_instr(curr_instr);
+// }
 
 VOID Image(IMG img, VOID* v)
 {
@@ -212,7 +212,7 @@ VOID Image(IMG img, VOID* v)
 VOID Instruction(INS ins, VOID* v)
 {
   // begin each instruction with this function
-  // INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR)ResetCurrentInstruction, IARG_INST_PTR, IARG_END);
+  INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR)ResetCurrentInstruction, IARG_INST_PTR, IARG_END);
 
   // instrument branch instructions
   if (INS_IsBranch(ins))
@@ -254,11 +254,7 @@ VOID Instruction(INS ins, VOID* v)
                      IARG_MEMORYOP_EA, memOp, IARG_END);
   }
 
-  // debug
-  // std::cout << "-------" << "instruction" << "-------" << std::endl;
-  // print_curr_instr(curr_instr);
-
-// finalize each instruction with this function
+  // finalize each instruction with this function
   INS_InsertIfCall(ins, IPOINT_BEFORE, (AFUNPTR)ShouldWrite, IARG_END);
   INS_InsertThenCall(ins, IPOINT_BEFORE, (AFUNPTR)WriteCurrentInstruction, IARG_END);
 }
@@ -287,7 +283,7 @@ int main(int argc, char* argv[])
 
   // === for print routine name ===
   // Initialize symbol table code, needed for rtn instrumentation
-  PIN_InitSymbols();
+  // PIN_InitSymbols();
   // === for print routine name ===
 
   // Initialize PIN library. Print help message if -h(elp) is specified
@@ -306,10 +302,10 @@ int main(int argc, char* argv[])
   // RTN_AddInstrumentFunction(FunctionEntry, 0);
   // RTN_AddInstrumentFunction(FunctionExit, 0);
 
-  INS_AddInstrumentFunction(Init_instruction, 0);
+  // INS_AddInstrumentFunction(Init_instruction, 0);
 
   // プリントファンクション
-  IMG_AddInstrumentFunction(Image, 0);
+  // IMG_AddInstrumentFunction(Image, 0);
 
   // Register function to be called to instrument instructions
   INS_AddInstrumentFunction(Instruction, 0);

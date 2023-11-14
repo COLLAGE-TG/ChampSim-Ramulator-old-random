@@ -1,6 +1,10 @@
 # This file is used to list the file patterns for ignoring the tracking in git
 # ignore all files in below directories
 /bin/
+dp3_traces/
+ChampSim-Ramulator.code-workspace
+tmp_trace/
+tracer/pin/core
 
 # ignore the specified type of files (.stats/.statistics/.trace/Dockerfile/.sh)
 /*.stats

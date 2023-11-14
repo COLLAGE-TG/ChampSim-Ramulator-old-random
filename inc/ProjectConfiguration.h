@@ -14,7 +14,7 @@
 #define RAMULATOR                                  (ENABLE) // whether use ramulator, assuming ramulator uses addresses at byte granularity and returns data at cache line granularity.
 #define MEMORY_USE_HYBRID                          (ENABLE) // whether use hybrid memory system instead of single memory systems
 #define PRINT_STATISTICS_INTO_FILE                 (ENABLE) // whether print simulation statistics into files
-#define PRINT_MEMORY_TRACE                         (DISABLE) // whether print memory trace into files
+#define PRINT_MEMORY_TRACE                         (ENABLE) // whether print memory trace into files
 #define MEMORY_USE_SWAPPING_UNIT                   (ENABLE) // whether memory controller uses swapping unit to swap data (data swapping overhead is considered)
 #define MEMORY_USE_OS_TRANSPARENT_MANAGEMENT       (ENABLE) // whether memory controller uses OS-transparent management designs to simulate the memory system instead of static (no-migration) methods
 #define CPU_USE_MULTIPLE_CORES                     (DISABLE) // whether CPU uses multiple cores to run simulation (go to ./inc/ChampSim/champsim_constants.h to check related parameters)
@@ -204,7 +204,7 @@ public:
 };
 
 // memory trace output class
-class MEMORY_TRACE: public DATA_OUTPUT
+class MEMORY_TRACE : public DATA_OUTPUT
 {
 public:
     MEMORY_TRACE(std::string v1, std::string v2);
@@ -215,7 +215,7 @@ public:
 };
 
 // simulator statistics output class
-class SIMULATOR_STATISTICS: public DATA_OUTPUT
+class SIMULATOR_STATISTICS : public DATA_OUTPUT
 {
 public:
 #define PAGE_TABLE_LEVEL_NUMBER     (5u)

@@ -56,7 +56,9 @@
         "concepts": "cpp",
         "numbers": "cpp",
         "cassert": "cpp",
-        "queue": "cpp"
+        "queue": "cpp",
+        "*.ph": "cpp",
+        "ranges": "cpp"
     },
     "editor.tabSize": 2,
     "editor.indentSize": "tabSize",

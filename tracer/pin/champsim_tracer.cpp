@@ -30,6 +30,9 @@
 
 using trace_instr_format_t = input_instr;
 
+// #define GC_START "signal_gc_start"
+#define GC_START "GC_stopped_mark"
+
 /* ================================================================== */
 // Global variables 
 /* ================================================================== */
@@ -39,6 +42,43 @@ UINT64 instrCount = 0;
 std::ofstream outfile;
 
 trace_instr_format_t curr_instr;
+
+/* ================================================================== */
+// Taiga's debug function
+/* ================================================================== */
+
+// void file_output(std::string file_path)
+// {
+//   std::ifstream inputfile(file_path);
+//   if (!inputfile.is_open())
+//   {
+//     std::cerr << "ファイルを開けませんでした." << std::endl;
+//     exit(1);
+//   }
+//   // ファイルからデータを読み込んで標準出力に出力
+//   std::string line;
+//   while (std::getline(inputfile, line))
+//   {
+//     std::cout << line << std::endl;
+//   }
+//   // ファイルを閉じる
+//   inputfile.close();
+// }
+
+// void print_curr_instr(trace_instr_format_t instr)
+// {
+//   std::cout << "===================" << std::endl;
+//   std::cout << "instr.ip = " << instr.ip << std::endl;
+//   std::cout << "instr.is_branch = " << instr.is_branch << std::endl;
+//   std::cout << "instr.branch_taken = " << instr.branch_taken << std::endl;
+//   std::cout << "instr.destination_registers = " << instr.destination_registers << std::endl;
+//   std::cout << "instr.source_registers = " << instr.source_registers << std::endl;
+//   std::cout << "instr.destination_memory = " << instr.destination_memory << std::endl;
+//   std::cout << "instr.source_memory = " << instr.source_memory << std::endl;
+//   std::cout << "instr.is_rtn_start = " << instr.is_rtn_start << std::endl;
+//   std::cout << "instr.is_rtn_end = " << instr.is_rtn_end << std::endl;
+//   std::cout << "instr.function_name = " << instr.function_name << std::endl;
+// }
 
 /* ===================================================================== */
 // Command line switches
@@ -89,9 +129,12 @@ BOOL ShouldWrite()
 
 void WriteCurrentInstruction()
 {
+  // print_curr_instr(curr_instr); // デバッグ用の命令
+
   typename decltype(outfile)::char_type buf[sizeof(trace_instr_format_t)];
   std::memcpy(buf, &curr_instr, sizeof(trace_instr_format_t));
-  outfile.write(buf, sizeof(trace_instr_format_t));
+  // std::cout << "====================" << "instrCount" << instrCount << " " << "curr_instr.function_name =  " << curr_instr.function_name << " curr_instr.source_memory " << curr_instr.source_memory << " curr_instr.destination_registers " << curr_instr.destination_registers << "curr_instr.destination_memory " << curr_instr.destination_memory << "====================" << std::endl;
+  outfile.write(buf, sizeof(trace_instr_format_t)); //curr_instrのデータをbufに渡す。curr_instrには.ip, .is_branchなどの値がある。
 }
 
 void BranchOrNot(UINT32 taken)
@@ -105,8 +148,61 @@ void WriteToSet(T* begin, T* end, UINT32 r)
 {
   auto set_end = std::find(begin, end, 0);
   auto found_reg = std::find(begin, set_end, r); // check to see if this register is already in the list
-  *found_reg = r;
+  *found_reg = r; //すでに存在しているレジスタならそのまま、存在していなければ末尾に追加。
 }
+
+/* ===================================================================== */
+// Print routine function
+/* ===================================================================== */
+
+VOID Print_rtn_start(CHAR* name)
+{
+  std::cout << "====================" << "rtn_name =  " << name << "====================" << std::endl;
+  curr_instr.is_rtn_start = 1;
+  strncpy(curr_instr.function_name, name, sizeof(curr_instr.function_name));
+  curr_instr.function_name[sizeof(curr_instr.function_name) - 1] = '\0';
+
+  // std::cout << "-------" << "Print_rtn_start" << "-------" << std::endl;
+  // print_curr_instr(curr_instr);
+}
+
+VOID Print_rtn_end(CHAR* name)
+{
+  std::cout << "====================" << " end " << name << "====================" << std::endl;
+  curr_instr.is_rtn_end = 1;
+  std::cout << "==================now_curr_instr " << curr_instr.is_rtn_end << std::endl;
+  strncpy(curr_instr.function_name, name, sizeof(curr_instr.function_name));
+  curr_instr.function_name[sizeof(curr_instr.function_name) - 1] = '\0';
+  std::cout << "-------" << "Print_rtn_end" << "-------" << std::endl;
+  // print_curr_instr(curr_instr);
+}
+
+// 初期化だけ行う
+// VOID Init_instruction(INS ins, VOID* v)
+// {
+//   // begin each instruction with this function
+//   INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR)ResetCurrentInstruction, IARG_INST_PTR, IARG_END);
+//   std::cout << "-------" << "Init_instruction" << "-------" << std::endl;
+//   // print_curr_instr(curr_instr);
+// }
+
+VOID Image(IMG img, VOID* v)
+{
+  RTN GC_start_rtn = RTN_FindByName(img, GC_START);
+  std::cout << "I'm here" << std::endl;
+  std::cout << "IMG name " << IMG_Name(img) << std::endl;
+  if (RTN_Valid(GC_start_rtn))
+  {
+    std::cout << "I'm here2" << std::endl;
+    std::cout << "====================" << "Finded GC_start_rtn " << GC_START << "====================" << std::endl;
+    RTN_Open(GC_start_rtn);
+    RTN_InsertCall(GC_start_rtn, IPOINT_BEFORE, (AFUNPTR)Print_rtn_start, IARG_ADDRINT, GC_START,
+                   IARG_END);
+    RTN_InsertCall(GC_start_rtn, IPOINT_AFTER, (AFUNPTR)Print_rtn_end, IARG_ADDRINT, GC_START, IARG_END);
+    RTN_Close(GC_start_rtn);
+  }
+}
+
 
 /* ===================================================================== */
 // Instrumentation callbacks
@@ -184,6 +280,12 @@ VOID Fini(INT32 code, VOID* v)
  */
 int main(int argc, char* argv[])
 {
+
+  // === for print routine name ===
+  // Initialize symbol table code, needed for rtn instrumentation
+  // PIN_InitSymbols();
+  // === for print routine name ===
+
   // Initialize PIN library. Print help message if -h(elp) is specified
   // in the command line or the command line is invalid 
   if (PIN_Init(argc, argv))
@@ -196,6 +298,15 @@ int main(int argc, char* argv[])
     exit(1);
   }
 
+  // // RTN_AddInstrumentFunctionを使用して関数エントリとエグジットのコールバック関数を設定
+  // RTN_AddInstrumentFunction(FunctionEntry, 0);
+  // RTN_AddInstrumentFunction(FunctionExit, 0);
+
+  // INS_AddInstrumentFunction(Init_instruction, 0);
+
+  // プリントファンクション
+  // IMG_AddInstrumentFunction(Image, 0);
+
   // Register function to be called to instrument instructions
   INS_AddInstrumentFunction(Instruction, 0);
 
@@ -203,6 +314,7 @@ int main(int argc, char* argv[])
   PIN_AddFiniFunction(Fini, 0);
 
   // Start the program, never returns
+  // このプログラムからは戻ってこない。アプリケーションの実行を開始する。
   PIN_StartProgram();
 
   return 0;
